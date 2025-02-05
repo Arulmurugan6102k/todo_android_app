@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -47,6 +48,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.todo.ui.theme.TodoTheme
 import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
+import android.util.Log;
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButton
 
 
 class MainActivity : ComponentActivity() {
@@ -66,11 +72,18 @@ class MainActivity : ComponentActivity() {
 @Composable
 @Preview
 fun TodoList() {
-    var isChecked = remember { mutableStateOf(false) }
-    var tasks by remember { mutableStateOf(mutableListOf<String>()) }
-    if(shouldShowDialog.value) {
-        AddTaskDialog(shouldShowDialog = shouldShowDialog);
+    var shouldShowAddTaskDialog = remember { mutableStateOf(false) }
+    var shouldShowDelTaskDialog = remember { mutableStateOf(true) }
+    var tasks by remember { mutableStateOf(listOf<String>()) }
+    if(shouldShowAddTaskDialog.value) {
+        AddTaskDialog(
+            shouldShowDialog = shouldShowAddTaskDialog,
+            onTaskAdded = { newTask ->
+                tasks = tasks + newTask
+            }
+        );
     }
+    DeleteTaskDialog(shouldShowDialog = shouldShowDelTaskDialog)
     Scaffold(
         topBar = {
             TopAppBar(
@@ -89,24 +102,13 @@ fun TodoList() {
                 .padding(16.dp),
             ){
             Column(
-                modifier = Modifier.padding(top = 65.dp)
+                modifier = Modifier.padding(top = 85.dp)
             ) {
-                LazyColumn{
-                    tasks(tasks) { task ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Start,
-                            verticalAlignment = Alignment.CenterVertically
-                        ){
-                            Checkbox(
-                                checked = isChecked.value,
-                                onCheckedChange = {isChecked.value = it} )
-                            Text(
-                                fontSize = 25.sp,
-                                text = "Project setup for android project."
-                            )
-                        }
+                LazyColumn {
+                    items(tasks) { task ->
+                        TaskRow(taskName =  task)
                     }
+                }
                 }
 
                 Box(
@@ -117,7 +119,7 @@ fun TodoList() {
                     FloatingActionButton(
                         modifier = Modifier
                             .align(Alignment.BottomEnd),
-                        onClick = { shouldShowDialog.value = true },
+                        onClick = { shouldShowAddTaskDialog.value = true },
                         containerColor = Color(0xFF6200EE),
                         contentColor = MaterialTheme.colorScheme.onSecondary
                     ) {
@@ -132,15 +134,38 @@ fun TodoList() {
 
         }
     }
+
+@Composable
+fun TaskRow(taskName : String) {
+    var isChecked by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ){
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ){
+            Checkbox(
+                checked = isChecked,
+                onCheckedChange = { isChecked = it } )
+            Text(
+                fontSize = 25.sp,
+                text = taskName
+            )
+        }
+        IconButton(onClick = { /*TODO*/ }) {
+            Icon(
+                imageVector = Icons.Outlined.Delete,
+                contentDescription = "Delete",
+            )
+        }
+    }
 }
 
 @Composable
-fun taskRow() {
-
-}
-
-@Composable
-fun AddTaskDialog(shouldShowDialog: MutableState<Boolean>) {
+fun AddTaskDialog(shouldShowDialog: MutableState<Boolean>,onTaskAdded: (String) -> Unit) {
     if (shouldShowDialog.value) {
         val taskNameState = remember { mutableStateOf("") }
         AlertDialog(
@@ -159,7 +184,7 @@ fun AddTaskDialog(shouldShowDialog: MutableState<Boolean>) {
                     onClick = {
                         shouldShowDialog.value = false
                         if (taskNameState.value.isNotBlank()){
-                            tasks.add(taskNameState.value)
+                            onTaskAdded(taskNameState.value)
                             taskNameState.value = ""
                         }
 
@@ -170,6 +195,34 @@ fun AddTaskDialog(shouldShowDialog: MutableState<Boolean>) {
                         color = Color.White
                     )
                 }
+            })
+    }
+}
+
+@Composable
+fun DeleteTaskDialog(shouldShowDialog: MutableState<Boolean>) {
+    if(shouldShowDialog.value) {
+        AlertDialog(
+            onDismissRequest = { shouldShowDialog.value = false },
+            title = {Text(text = "Delete Task")},
+            confirmButton = {
+                    Box(){
+                        Button(
+                            onClick = { shouldShowDialog.value = false },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                color = Color.White,
+                            )
+                        }
+                        Button(onClick = { shouldShowDialog.value = false }) {
+                            Text(
+                                text = "Add",
+                                color = Color.White
+                            )
+                        }
+                    }
             })
     }
 }
